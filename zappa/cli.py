@@ -113,6 +113,7 @@ class ZappaCLI(object):
     exception_handler = None
     environment_variables = None
     authorizer = None
+    additional_template = None
 
     stage_name_env_pattern = re.compile('^[a-zA-Z0-9_]+$')
 
@@ -388,8 +389,8 @@ class ZappaCLI(object):
                                                         self.api_key_required,
                                                         self.integration_content_type_aliases,
                                                         self.iam_authorization,
-                                                        self.authorizer)
-
+                                                        self.authorizer,
+                                                        self.additional_template)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True)
 
             # Deploy the API!
@@ -497,7 +498,8 @@ class ZappaCLI(object):
                                              self.api_key_required,
                                              self.integration_content_type_aliases,
                                              self.iam_authorization,
-                                             self.authorizer)
+                                             self.authorizer,
+                                             self.additional_template)
             self.zappa.update_stack(self.lambda_name, self.s3_bucket_name, wait=True, update_only=True)
 
             api_id = self.zappa.get_api_id(self.lambda_name)
@@ -1304,6 +1306,7 @@ class ZappaCLI(object):
         self.environment_variables = self.stage_config.get('environment_variables', {})
         self.check_environment(self.environment_variables)
         self.authorizer = self.stage_config.get('authorizer', {})
+        self.additional_template = self.stage_config.get('additional_template', None)
 
         self.zappa = Zappa( boto_session=session,
                             profile_name=self.profile_name,

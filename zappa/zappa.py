@@ -2,6 +2,8 @@ from __future__ import print_function
 
 import boto3
 import botocore
+import click
+import importlib  # Yeah, we need Python 2.7+, 3.1+ now...
 import json
 import logging
 import os
@@ -815,7 +817,11 @@ class Zappa(object):
             method.AuthorizationType = authorization_type
             if authorizer_resource:
                 method.AuthorizerId = troposphere.Ref(authorizer_resource)
-            method.ApiKeyRequired = api_key_required
+            # If api_key_required is a list then apply the requirement on only the verbs that are listed
+            if isinstance(api_key_required, list):
+                method.ApiKeyRequired = method_name.upper() in api_key_required
+            else:
+                method.ApiKeyRequired = api_key_required
             method.MethodResponses = []
             self.cf_template.add_resource(method)
             self.cf_api_resources.append(method.title)
@@ -953,7 +959,8 @@ class Zappa(object):
                 },
             ]
         )
-        print('Created a new x-api-key: {}'.format(response['id']))
+        click.echo(click.style('Created a new x-api-key id: {} value: '.format(response['id']), fg="green", bold=True), nl=False)
+        click.echo(click.style(response['value'], fg="red", bold=True))
 
     def remove_api_key(self, api_id, stage_name):
         """
@@ -1078,7 +1085,7 @@ class Zappa(object):
             return False
 
     def create_stack_template(self, lambda_arn, lambda_name, api_key_required, integration_content_type_aliases,
-                              iam_authorization, authorizer):
+                              iam_authorization, authorizer, additional_template):
         """
         Build the entire CF stack.
         Just used for the API Gateway, but could be expanded in the future.
@@ -1103,6 +1110,15 @@ class Zappa(object):
 
         restapi = self.create_api_gateway_routes(lambda_arn, lambda_name, api_key_required,
                                                  integration_content_type_aliases, auth_type, authorizer)
+
+        if additional_template:
+            mod, fn = '.'.join(additional_template.split('.')[:-1]), additional_template.split('.')[-1]
+            os.sys.path.append(os.getcwd())
+            module = importlib.import_module(mod)
+            fn = getattr(module, fn)
+            if not callable(fn):
+                raise ImportError('Expecting a callable for "{}" in module "{}"'.format(fn, mod))
+            fn(self.cf_template)
         return self.cf_template
 
     def update_stack(self, name, working_bucket, wait=False, update_only=False):
