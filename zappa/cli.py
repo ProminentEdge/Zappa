@@ -1511,7 +1511,7 @@ class ZappaCLI(object):
         prebuild_function = getattr(prebuild_module, prebuild_function_s)
 
         # Execute it
-        prebuild_function()
+        prebuild_function(self)
 
 
     def collision_warning(self, item):
