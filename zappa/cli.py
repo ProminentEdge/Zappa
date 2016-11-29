@@ -1218,7 +1218,8 @@ class ZappaCLI(object):
 
         if callback:
             (mod_name, cb_func) = callback.rsplit('.', 1)
-
+            if not os.getcwd() in sys.path:
+                os.sys.path.append(os.getcwd())
             module_ = importlib.import_module(mod_name)
             getattr(module_, cb_func)(self)  # Call the function passing self
 
