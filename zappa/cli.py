@@ -613,6 +613,8 @@ class ZappaCLI(object):
         if remove_logs:
             self.zappa.remove_lambda_function_logs(self.lambda_name)
 
+        self.callback('postundeploy')
+
         click.echo(click.style("Done", fg="green", bold=True) + "!")
 
     def schedule(self):
